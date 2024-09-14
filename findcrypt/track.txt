@@ -1,0 +1,20 @@
+	// typical AES encryption depends on the IV alone preventing identical inputs from 
+	// encrypting to identical outputs
+	// MIT Kerberos uses a model in which the IV is set to all zeroes, but the first 
+	// block of data is random, and then discarded on decryption
+	// I think of this as a "reinitialization vector" that takes place on the other 
+	// side of the encryption "looking glass". It should also help protect against 
+	// theoretical known-plaintext vulnerabilities in AES.
+	// why not use both? 
+	byte[] reIV = GenerateRandomBytes(blockSize);
+	SecretKey key2 = new SecretKeySpec(key, 0, key.length, "AES");
+	c.init(Cipher.ENCRYPT_MODE, key2, new IvParameterSpec(iv));
+	byte[] rivPlainText = new byte[plainText.length + blockSize];
+	System.arraycopy(reIV, 0, rivPlainText, 0, reIV.length);
+	System.arraycopy(plainText, 0, rivPlainText, blockSize, plainText.length);
+	byte[] cipherText = c.doFinal(rivPlainText);
+	byte[] ivCipherText = new byte[cipherText.length + blockSize];
+	System.arraycopy(iv, 0, ivCipherText, 0, iv.length);
+	System.arraycopy(cipherText, 0, ivCipherText, blockSize, cipherText.length);	
+	return ivCipherText;
+}

